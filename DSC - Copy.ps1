@@ -8,8 +8,8 @@ Configuration WebsiteDeployment
         [String]$DestinationPath = 'C:\inetpub\Test-Site',
         [String]$State = 'Present',
         [String]$UserName = 'sa-WebUser'
-        #[String]$Password = 'MyStrongPassword',
-        #[securestring]$secStringPassword = (ConvertTo-SecureString 'MyStrongPassword' -AsPlainText -Force),
+        #[String]$Password = 'Admin12!',
+        #[securestring]$secStringPassword = (ConvertTo-SecureString 'Admin12!' -AsPlainText -Force),
         #[System.Management.Automation.PSCredential]$credObject = (New-Object System.Management.Automation.PSCredential ($userName, $secStringPassword))
         #[securestring]$secStringPassword,
         #[pscredential]$credObject
@@ -24,6 +24,8 @@ Configuration WebsiteDeployment
     
     Node $Node
     {
+        #[securestring]$secStringPassword = (ConvertTo-SecureString $Password -AsPlainText -Force)
+        #[pscredential]$credObject = (New-Object System.Management.Automation.PSCredential ($userName, $secStringPassword))
 ##### Enable WebServer Role
         WindowsFeature WebServerRole
         {
@@ -52,11 +54,11 @@ Configuration WebsiteDeployment
         {
             Ensure = $State
             Username = $UserName
-            #Password = $credObject
+            Password = $credObject
             PasswordChangeRequired = $false
             Disabled = $false
             FullName = 'Site User'
-            Description = 'Service Acount for Test-Web Website'
+            Description = 'Service Acount for ACBA-Test Website'
         }
 
 ##### Add the created user to the RDP User Group
@@ -137,9 +139,19 @@ Configuration WebsiteDeployment
     }
 }
 
+$cd = @{
+    AllNodes = @(
+        @{
+            NodeName='Web001'
+            PSDscAllowPlainTextPassword=$true
+        }
+    )
+}
 WebsiteDeployment -OutputPath 'C:\DscConfiguration'
 
-#$secStringPassword = (ConvertTo-SecureString 'MyStrongPassword' -AsPlainText -Force)
-#$credObject = (New-Object System.Management.Automation.PSCredential ('sa-WebUser', $secStringPassword))
+#$password = ConvertTo-SecureString "Admin12!" -AsPlainText -Force
+#$credential = New-Object System.Management.Automation.PSCredential ($UserName, $password)
+$secStringPassword = (ConvertTo-SecureString 'Admin12!' -AsPlainText -Force)
+$credObject = (New-Object System.Management.Automation.PSCredential ('sa-WebUser', $secStringPassword))
 
 Start-DscConfiguration -Wait -Verbose -Path "C:\DscConfiguration" -Force

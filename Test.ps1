@@ -7,12 +7,12 @@ Configuration WebsiteDeployment
         [String]$SourcePath = 'C:\Test',
         [String]$DestinationPath = 'C:\inetpub\Test-Site',
         [String]$State = 'Present',
-        [String]$UserName = 'sa-WebUser'
-        #[String]$Password = 'MyStrongPassword',
+        [String]$UserName = 'sa-WebUser',
+        [String]$Password = 'MyStrongPassword',
         #[securestring]$secStringPassword = (ConvertTo-SecureString 'MyStrongPassword' -AsPlainText -Force),
         #[System.Management.Automation.PSCredential]$credObject = (New-Object System.Management.Automation.PSCredential ($userName, $secStringPassword))
-        #[securestring]$secStringPassword,
-        #[pscredential]$credObject
+        [securestring]$secStringPassword,
+        [pscredential]$credObject
         #[System.Management.Automation.PSCredential]$PasswordCredential
         
     )
@@ -24,6 +24,8 @@ Configuration WebsiteDeployment
     
     Node $Node
     {
+    $secStringPassword = (ConvertTo-SecureString 'MyStrongPassword' -AsPlainText -Force)
+    $credObject = (New-Object System.Management.Automation.PSCredential ('sa-WebUser', $secStringPassword))
 ##### Enable WebServer Role
         WindowsFeature WebServerRole
         {
@@ -52,8 +54,9 @@ Configuration WebsiteDeployment
         {
             Ensure = $State
             Username = $UserName
-            #Password = $credObject
+            Password = $credObject
             PasswordChangeRequired = $false
+            PasswordChangeNotAllowed = $true
             Disabled = $false
             FullName = 'Site User'
             Description = 'Service Acount for Test-Web Website'
@@ -103,20 +106,20 @@ Configuration WebsiteDeployment
         }
 
 ##### Create App Pool for the Website with Specific user created in the previous Step
-        <#xWebAppPool AddAppPool
+        xWebAppPool AddAppPool
         {
             Name = 'Test-Web'
             Ensure = $State
             autoStart = $true
             startMode = 'AlwaysRunning'
-            identityType = 'SpecificUser'
-            Credential = $credential
+            identityType = 'ApplicationPoolIdentity'
+            #Credential = $credential
             <#{
                 UserName = $UserName
                 Password = $Password
-            }
+            }#>
             DependsOn = '[WindowsFeature]WebServerRole', '[User]CreateSaUser'
-        }#>
+        }
 
 ##### Create Website in IIS 
         xWebSite AddWebSite
@@ -136,7 +139,16 @@ Configuration WebsiteDeployment
         }
     }
 }
-
+$configData = 'a'
+ 
+$configData = @{
+                AllNodes = @(
+                              @{
+                                 NodeName = 'localhost';
+                                 PSDscAllowPlainTextPassword = $true
+                                    }
+                    )
+               }
 WebsiteDeployment -OutputPath 'C:\DscConfiguration'
 
 #$secStringPassword = (ConvertTo-SecureString 'MyStrongPassword' -AsPlainText -Force)
